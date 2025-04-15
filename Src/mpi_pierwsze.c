@@ -11,6 +11,21 @@ int main(int argc, char **argv) {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
+    if (argc < 2) {
+        if (rank == 0)
+            fprintf(stderr, "Użycie: %s <liczba_intów_do_wczytania>\n", argv[0]);
+        MPI_Finalize();
+        return 1;
+    }
+
+    int liczba_intow = atoi(argv[1]);
+    if (liczba_intow <= 0) {
+        if (rank == 0)
+            fprintf(stderr, "Podano niepoprawną liczbę: %s\n", argv[1]);
+        MPI_Finalize();
+        return 1;
+    }
+
     FILE *plik = fopen(FILENAME, "rb");
     if (!plik) {
         perror("Nie można otworzyć pliku");
@@ -18,9 +33,8 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    int *liczby = malloc(INT_COUNT * sizeof(int));
-    int n = 0;
-    while (fread(&liczby[n], sizeof(int), 1, plik) == 1) n++;
+    int *liczby = malloc(liczba_intow * sizeof(int));
+    int n = fread(liczby, sizeof(int), liczba_intow, plik);
     fclose(plik);
 
     double start = MPI_Wtime();  // START pomiaru
