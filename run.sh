@@ -1,43 +1,52 @@
 #!/bin/bash
 
 BINARY_DIR="./binary"
-PROGRAMS=("openmp_pierwsze" "mpi_pierwsze" "hybryda_pierwsze")
 ROZMIARY_DANYCH=(4000000 8000000 16000000 32000000 64000000)
-WATKI_PROCESY=(1 2 4 8 12 16)
+WATKI_PROCESY=(1 2 4 8 12 16 32)
 
 echo "🔁 Benchmark: wszystkie wersje z różnymi rozmiarami i konfiguracjami"
 echo
 
-for prog in "${PROGRAMS[@]}"
+# ---------- OpenMP ----------
+echo "🚀 Program: openmp_pierwsze"
+for rozmiar in "${ROZMIARY_DANYCH[@]}"
 do
-    bin_path="$BINARY_DIR/$prog"
-    if [[ -f "$bin_path" ]]; then
-        echo "🚀 Program: $prog"
-        echo "----------------------------"
-        
-        for rozmiar in "${ROZMIARY_DANYCH[@]}"
-        do
-            for p in "${WATKI_PROCESY[@]}"
-            do
-                echo "▶️  $prog | Rozmiar: $rozmiar | Procesy/Wątki: $p"
-
-                if [[ "$prog" == "openmp_pierwsze" ]]; then
-                    "$bin_path" $rozmiar $p
-
-                elif [[ "$prog" == "mpi_pierwsze" ]]; then
-                    mpirun -np $p "$bin_path" $rozmiar
-
-                elif [[ "$prog" == "hybryda_pierwsze" ]]; then
-                    mpirun -np $p "$bin_path" $rozmiar $p
-                fi
-
-                echo   # pusty wiersz
-            done
-        done
-
-        echo "============================"
+    for w in "${WATKI_PROCESY[@]}"; do
+        echo "▶️  OpenMP | Rozmiar: $rozmiar | Wątki: $w"
+        "$BINARY_DIR/openmp_pierwsze" $rozmiar $w
         echo
-    else
-        echo "❌ Nie znaleziono pliku: $bin_path"
-    fi
+    done
+done
+echo "============================"
+echo
+
+# ---------- MPI ----------
+echo "🚀 Program: mpi_pierwsze"
+for rozmiar in "${ROZMIARY_DANYCH[@]}"
+do
+    for p in "${WATKI_PROCESY[@]}"; do
+        echo "▶️  MPI | Rozmiar: $rozmiar | Procesy: $p"
+        mpirun --oversubscribe -np $p "$BINARY_DIR/mpi_pierwsze" $rozmiar
+        echo
+    done
+done
+echo "============================"
+echo
+
+# ---------- Hybryda (2 i 4 procesy) ----------
+for PROC in 2 4; do
+    echo "🚀 Program: hybryda_pierwsze (procesów: $PROC)"
+    for rozmiar in "${ROZMIARY_DANYCH[@]}"
+    do
+        for w in "${WATKI_PROCESY[@]}"; do
+            TOTAL=$((PROC * w))
+            if [ $TOTAL -le 32 ]; then
+                echo "▶️  Hybryda | Rozmiar: $rozmiar | Procesy: $PROC | Wątki: $w (łącznie $TOTAL)"
+                mpirun --oversubscribe -np $PROC "$BINARY_DIR/hybryda_pierwsze" $rozmiar $w
+                echo
+            fi
+        done
+    done
+    echo "============================"
+    echo
 done

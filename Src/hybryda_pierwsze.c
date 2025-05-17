@@ -22,9 +22,9 @@ int main(int argc, char **argv) {
     int liczba_intow = atoi(argv[1]);
     int liczba_watkow = atoi(argv[2]);
 
-    if (liczba_intow <= 0 || liczba_watkow <= 0) {
+    if (liczba_intow <= 0 || liczba_watkow <= 0 || liczba_watkow * size > 32) {
         if (rank == 0)
-            fprintf(stderr, "Podano niepoprawne argumenty: %s %s\n", argv[1], argv[2]);
+            fprintf(stderr, "Niepoprawne parametry: ints=%d, watki=%d, procesy=%d (max total threads = 32)\n", liczba_intow, liczba_watkow, size);
         MPI_Finalize();
         return 1;
     }
